@@ -5,6 +5,7 @@ import (
 	"io"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/aymerick/raymond"
@@ -122,6 +123,7 @@ func cloneCell(from, to *xlsx.Cell, options *Options) {
 		style.Alignment.WrapText = true
 	}
 	to.SetStyle(style)
+	to.NumFmt = from.NumFmt
 	to.HMerge = from.HMerge
 	to.VMerge = from.VMerge
 	to.Hidden = from.Hidden
@@ -129,7 +131,7 @@ func cloneCell(from, to *xlsx.Cell, options *Options) {
 }
 
 func cloneRow(from, to *xlsx.Row, options *Options) {
-	to.Height = from.Height
+	to.SetHeight(from.Height)
 	for _, cell := range from.Cells {
 		newCell := to.AddCell()
 		cloneCell(cell, newCell, options)
@@ -147,7 +149,13 @@ func renderCell(cell *xlsx.Cell, ctx interface{}) error {
 	if err != nil {
 		return err
 	}
-	cell.Value = out
+	if outFloat, err := strconv.ParseFloat(out, 64); err == nil {
+		cell.SetFloat(outFloat)
+		cell.NumFmt = "#,##0"
+	} else {
+		cell.Value = out
+	}
+
 	return nil
 }
 
